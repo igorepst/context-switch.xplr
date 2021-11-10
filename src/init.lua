@@ -3,13 +3,46 @@ local csw = {}
 local cur = 1
 local cs = {}
 
+---@diagnostic disable
+local xplr = xplr
+---@diagnostic enable
+
 local rend_ins = function(i, v)
-    return { i == cur and 'v' or '', tostring(i), v.inited and v.pwd or '?' }
+    local pwd, fss = '?', ''
+    if v.pwd then
+        pwd = v.pwd
+        local appco = xplr.config.general
+        local sep = appco.sort_and_filter_ui.separator.format
+        sep = sep or ' '
+        if v.filters then
+            local fco = appco.sort_and_filter_ui.filter_identifiers
+            for _, vf in pairs(v.filters) do
+                local f = fco[vf.filter]
+                if f then
+                    fss = fss .. f.format .. vf.input .. sep
+                end
+            end
+        end
+        if v.sorters then
+            local fco = appco.sort_and_filter_ui.sorter_identifiers
+            local fw = appco.sort_and_filter_ui.sort_direction_identifiers.forward.format
+            fw = fw or 'F'
+            local rw = appco.sort_and_filter_ui.sort_direction_identifiers.reverse.format
+            rw = rw or 'R'
+            for _, vf in pairs(v.sorters) do
+                local f = fco[vf.sorter]
+                if f then
+                    fss = fss .. f.format .. (vf.reverse and rw or fw) .. sep
+                end
+            end
+        end
+        fss = fss:gsub(sep .. '$', '')
+    end
+    return { i == cur and '->' or '', tostring(i), pwd, fss }
 end
 
 local capture = function(c, app)
     c.pwd = app.pwd
-    c.inited = true
     c.focused_path = app.focused_node.absolute_path
     c.selection = {}
     if app.selection then
@@ -17,6 +50,8 @@ local capture = function(c, app)
             table.insert(c.selection, v.absolute_path)
         end
     end
+    c.sorters = app.explorer_config.sorters
+    c.filters = app.explorer_config.filters
 end
 
 csw.get_current_context_num = function()
@@ -28,15 +63,11 @@ csw.setup = function(args)
     args.mode = args.mode or 'default'
     args.key = args.key or 'ctrl-s'
     if not args.layout_height or args.layout_height < 1 or args.layout_height > 99 then
-        args.layout_height = 30
+        args.layout_height = 32
     end
 
-    ---@diagnostic disable
-    local xplr = xplr
-    ---@diagnostic enable
-
     xplr.fn.custom.render_context_switch_layout = function(_)
-        local t = {}
+        local t = { { 'Cur', '#', 'Path', 'Sort & Filter' } }
         for k, v in pairs(cs) do
             if k ~= 1 then
                 table.insert(t, rend_ins(k - 1, v))
@@ -45,6 +76,7 @@ csw.setup = function(args)
         table.insert(t, rend_ins(0, cs[1]))
         return t
     end
+
     xplr.config.modes.custom.context_switch = {
         name = 'context switch',
         key_bindings = {
@@ -68,12 +100,8 @@ csw.setup = function(args)
             Vertical = {
                 config = {
                     constraints = {
-                        {
-                            Percentage = 100 - args.layout_height,
-                        },
-                        {
-                            Percentage = args.layout_height,
-                        },
+                        { Percentage = 100 - args.layout_height },
+                        { Percentage = args.layout_height },
                     },
                 },
                 splits = {
@@ -86,7 +114,8 @@ csw.setup = function(args)
                                     widths = {
                                         { Percentage = 5 },
                                         { Percentage = 5 },
-                                        { Percentage = 90 },
+                                        { Percentage = 60 },
+                                        { Percentage = 30 },
                                     },
                                     col_spacing = 1,
                                     render = 'custom.render_context_switch_layout',
@@ -98,20 +127,18 @@ csw.setup = function(args)
             },
         },
     }
+
     xplr.fn.custom['context_switch_to_helper'] = function(app)
         local c = cs[cur + 1]
         capture(c, app)
     end
+
     xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
         help = 'context switch',
         messages = {
             'PopMode',
-            {
-                CallLuaSilently = 'custom.context_switch_to_helper',
-            },
-            {
-                SwitchModeCustom = 'context_switch',
-            },
+            { CallLuaSilently = 'custom.context_switch_to_helper' },
+            { SwitchModeCustom = 'context_switch' },
         },
     }
 
@@ -120,7 +147,7 @@ csw.setup = function(args)
         table.insert(cs, c)
         xplr.fn.custom['context_switch_to_' .. i] = function(app)
             cur = i
-            if c.inited then
+            if c.pwd then
                 local msgs = {
                     { ChangeDirectory = c.pwd },
                 }
@@ -131,6 +158,18 @@ csw.setup = function(args)
                     table.insert(msgs, 'ClearSelection')
                     for _, v in pairs(c.selection) do
                         table.insert(msgs, { SelectPath = v })
+                    end
+                end
+                if c.filters then
+                    table.insert(msgs, 'ClearNodeFilters')
+                    for _, v in pairs(c.filters) do
+                        table.insert(msgs, { AddNodeFilter = { filter = v.filter, input = v.input } })
+                    end
+                end
+                if c.sorters then
+                    table.insert(msgs, 'ClearNodeSorters')
+                    for _, v in pairs(c.sorters) do
+                        table.insert(msgs, { AddNodeSorter = { sorter = v.sorter, reverse = v.reverse } })
                     end
                 end
                 return msgs
