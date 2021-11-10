@@ -1,6 +1,10 @@
 # Context switch plugin for [xplr](https://xplr.dev)
 ----------------------------------------------------
 
+
+https://user-images.githubusercontent.com/1630792/141197469-c9fd38ae-2822-4acf-8d6c-537414d8e3f5.mp4
+
+
 Saves and loads 10 contexts, incl. focused node and selection.<br/>
 Presents to the user a vertically split layout with a file system on the top and
 a panel with contexts list. Not initialized contexts have '?' as their path.
