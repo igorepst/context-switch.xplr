@@ -44,12 +44,6 @@ end
 local capture = function(c, app)
     c.pwd = app.pwd
     c.focused_path = app.focused_node.absolute_path
-    c.selection = {}
-    if app.selection then
-        for _, v in pairs(app.selection) do
-            table.insert(c.selection, v.absolute_path)
-        end
-    end
     c.sorters = app.explorer_config.sorters
     c.filters = app.explorer_config.filters
 end
@@ -151,15 +145,6 @@ csw.setup = function(args)
                 local msgs = {
                     { ChangeDirectory = c.pwd },
                 }
-                if c.focused_path then
-                    table.insert(msgs, { FocusPath = c.focused_path })
-                end
-                if c.selection then
-                    table.insert(msgs, 'ClearSelection')
-                    for _, v in pairs(c.selection) do
-                        table.insert(msgs, { SelectPath = v })
-                    end
-                end
                 if c.filters then
                     table.insert(msgs, 'ClearNodeFilters')
                     for _, v in pairs(c.filters) do
@@ -171,6 +156,9 @@ csw.setup = function(args)
                     for _, v in pairs(c.sorters) do
                         table.insert(msgs, { AddNodeSorter = { sorter = v.sorter, reverse = v.reverse } })
                     end
+                end
+                if c.focused_path then
+                    table.insert(msgs, { FocusPath = c.focused_path })
                 end
                 return msgs
             else
