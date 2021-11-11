@@ -5,13 +5,13 @@
 https://user-images.githubusercontent.com/1630792/141197469-c9fd38ae-2822-4acf-8d6c-537414d8e3f5.mp4
 
 
-Saves and loads 10 contexts, incl. focused node and selection.<br/>
+Saves and loads 10 contexts, incl. focused node, sorters & filters.<br/>
 Presents to the user a vertically split layout with a file system on the top and
 a panel with contexts list. Not initialized contexts have '?' as their path.
 Current context is marked by '->'.<br/>
 Please note, this is a context switch and not a bookmarking plugin, hence every time
 you open this mode, the stored information for the current context will be changed
-(current working directory, focused node and selection).<br/>
+(current working directory, focused node, sorters & filters).<br/>
 Upon quitting `xplr` the contexts will be cleared.
 
 ## Keybindings
@@ -53,7 +53,7 @@ The plugin supports passing multiple arguments to `setup` function
 
 ## Features
 
-- Save current focus, selection, sort & filter 
+- Save current focus, sort & filter 
 - Get current context number (use `get_current_context_num()`)<br/>
 Example:
 
