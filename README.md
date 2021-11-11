@@ -46,7 +46,7 @@ Upon quitting `xplr` the contexts will be cleared.
 ## Arguments
 The plugin supports passing multiple arguments to `setup` function
 
-- mode: xplr mode ('default' if absent)
+- mode: `xplr` mode ('default' if absent)
 - key: keybinding to switch to context mode ('ctrl-s' if absent)
 - layout_height: the height in percents of the context switch window (a number between 1-99, default - 32)
 
