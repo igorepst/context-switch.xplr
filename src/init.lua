@@ -149,7 +149,7 @@ csw.setup = function(args)
         local num = tonumber(app.input_buffer)
         if num ~= nil then
             cur = num
-            return xplr.fn.custom.context_switch.to_cur()
+            return xplr.fn.custom.context_switch.to_cur(app)
         end
     end
 
