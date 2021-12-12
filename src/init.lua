@@ -113,6 +113,10 @@ csw.setup = function(args)
         cur = initial_cur
     end
 
+    xplr.fn.custom.context_switch.quit_cur = function(_)
+        cs[cur + 1] = {}
+    end
+
     xplr.fn.custom.context_switch.to_cur = function(app)
         initial_cur = cur
         local c = cs[cur + 1]
@@ -184,10 +188,6 @@ csw.setup = function(args)
                         "PopMode",
                     },
                 },
-                ['ctrl-c'] = {
-                    help = 'terminate',
-                    messages = { 'Terminate' },
-                },
                 esc = {
                     help = 'cancel',
                     messages = {
@@ -195,9 +195,15 @@ csw.setup = function(args)
                       'PopMode'
                     },
                 },
+                ['ctrl-c'] = {
+                    help = 'terminate',
+                    messages = { 'Terminate' },
+                },
                 ['q'] = {
-                    help = 'quit',
-                    messages = { 'Quit' },
+                    help = 'quit context',
+                    messages = {
+                      { CallLuaSilently = "custom.context_switch.quit_cur" },
+                    },
                 },
             },
             on_number = {

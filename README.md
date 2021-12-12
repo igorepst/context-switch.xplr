@@ -17,12 +17,14 @@ Upon quitting `xplr` the contexts will be cleared.
 
 | Key             | Action                                                   |
 | --------------- | -------------------------------------------------------- |
-| 0-9             | switch context                                           |
+| 0-9             | switch to context number                                 |
 | j/down          | next context                                             |
 | k/up            | previous context                                         |
 | tab/ctrl-n      | next initialized context                                 |
 | back-tab/ctrl-p | previous initialized context                             |
 | esc             | close context switch mode and return to the previous one |
+| enter           | switch to the context under cursor                       |
+| q               | quit the context under cursor                            |
 | ctrl-c          | terminate `xplr`                                         |
 
 ## Installation
