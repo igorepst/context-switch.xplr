@@ -1,11 +1,14 @@
 local csw = {}
 
 local cur = 1
-local cs = {}
+local initial_cur = cur
+local cs = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
 
 ---@diagnostic disable
 local xplr = xplr
 ---@diagnostic enable
+
+xplr.fn.custom.context_switch = {}
 
 local rend_ins = function(i, v)
     local pwd, fss = '?', ''
@@ -52,6 +55,7 @@ csw.get_current_context_num = function()
     return cur
 end
 
+
 csw.setup = function(args)
     args = args or {}
     args.mode = args.mode or 'default'
@@ -60,7 +64,7 @@ csw.setup = function(args)
         args.layout_height = 32
     end
 
-    xplr.fn.custom.render_context_switch_layout = function(_)
+    xplr.fn.custom.context_switch.render = function(_)
         local t = { { '   #', 'Path', 'Sort & Filter' } }
         for k, v in pairs(cs) do
             if k ~= 1 then
@@ -71,24 +75,146 @@ csw.setup = function(args)
         return t
     end
 
+    xplr.fn.custom.context_switch.next = function(_)
+        if cur == 9 then
+            cur = 0
+        else
+            cur = cur + 1
+        end
+    end
+
+    xplr.fn.custom.context_switch.prev = function(_)
+        if cur == 0 then
+            cur = 9
+        else
+            cur = cur - 1
+        end
+    end
+
+    xplr.fn.custom.context_switch.next_initialized = function(_)
+        while true do
+            xplr.fn.custom.context_switch.next()
+            if cs[cur + 1].pwd ~= nil then
+                break
+            end
+        end
+    end
+
+    xplr.fn.custom.context_switch.prev_initialized = function(_)
+        while true do
+            xplr.fn.custom.context_switch.prev()
+            if cs[cur + 1].pwd ~= nil then
+                break
+            end
+        end
+    end
+
+    xplr.fn.custom.context_switch.reset_cur = function(_)
+        cur = initial_cur
+    end
+
+    xplr.fn.custom.context_switch.quit_cur = function(_)
+        cs[cur + 1] = {}
+    end
+
+    xplr.fn.custom.context_switch.to_cur = function(app)
+        initial_cur = cur
+        local c = cs[cur + 1]
+        if c.pwd then
+            local msgs = {
+                { ChangeDirectory = c.pwd },
+            }
+            if c.filters then
+                table.insert(msgs, 'ClearNodeFilters')
+                for _, v in pairs(c.filters) do
+                    table.insert(msgs, { AddNodeFilter = { filter = v.filter, input = v.input } })
+                end
+            end
+            if c.sorters then
+                table.insert(msgs, 'ClearNodeSorters')
+                for _, v in pairs(c.sorters) do
+                    table.insert(msgs, { AddNodeSorter = { sorter = v.sorter, reverse = v.reverse } })
+                end
+            end
+            if c.focused_path then
+                table.insert(msgs, { FocusPath = c.focused_path })
+            end
+            return msgs
+        else
+            capture(c, app)
+        end
+    end
+
+    xplr.fn.custom.context_switch.to_input = function(app)
+        local num = tonumber(app.input_buffer)
+        if num ~= nil then
+            cur = num
+            return xplr.fn.custom.context_switch.to_cur(app)
+        end
+    end
+
     xplr.config.modes.custom.context_switch = {
         name = 'context switch',
         key_bindings = {
             on_key = {
+                up = {
+                    help = 'prev',
+                    messages = {
+                        { CallLuaSilently = "custom.context_switch.prev" }
+                    },
+                },
+                down = {
+                    help = 'next',
+                    messages = {
+                        { CallLuaSilently = "custom.context_switch.next" }
+                    },
+                },
+                tab = {
+                    help = 'next initialized',
+                    messages = {
+                        { CallLuaSilently = "custom.context_switch.next_initialized" }
+                    },
+                },
+                ["back-tab"] = {
+                    help = 'prev initialized',
+                    messages = {
+                        { CallLuaSilently = "custom.context_switch.prev_initialized" }
+                    },
+                },
+                enter = {
+                    help = 'switch',
+                    messages = {
+                        { CallLuaSilently = "custom.context_switch.to_cur" },
+                        "PopMode",
+                    },
+                },
+                esc = {
+                    help = 'cancel',
+                    messages = {
+                      { CallLuaSilently = "custom.context_switch.reset_cur" },
+                      'PopMode'
+                    },
+                },
                 ['ctrl-c'] = {
                     help = 'terminate',
                     messages = { 'Terminate' },
                 },
-                esc = {
-                    help = 'escape',
-                    messages = { 'PopMode' },
-                },
                 ['q'] = {
-                    help = 'quit',
-                    messages = { 'Quit' },
+                    help = 'quit context',
+                    messages = {
+                      { CallLuaSilently = "custom.context_switch.quit_cur" },
+                    },
                 },
             },
-            default = { messages = {} },
+            on_number = {
+                help = 'switch to',
+                messages = {
+                    "BufferInputFromKey",
+                    { CallLuaSilently = "custom.context_switch.to_input" },
+                    "PopMode",
+                },
+            },
+            default = {},
         },
         layout = {
             Vertical = {
@@ -111,7 +237,7 @@ csw.setup = function(args)
                                         { Percentage = 35 },
                                     },
                                     col_spacing = 1,
-                                    render = 'custom.render_context_switch_layout',
+                                    render = 'custom.context_switch.render',
                                 },
                             },
                         },
@@ -121,7 +247,13 @@ csw.setup = function(args)
         },
     }
 
-    xplr.fn.custom['context_switch_to_helper'] = function(app)
+    local on_key = xplr.config.modes.custom.context_switch.key_bindings.on_key
+    on_key.j = on_key.down
+    on_key.k = on_key.up
+    on_key["ctrl-n"] = on_key.tab
+    on_key["ctrl-p"] = on_key["back-tab"]
+
+    xplr.fn.custom.context_switch.capture = function(app)
         local c = cs[cur + 1]
         capture(c, app)
     end
@@ -130,48 +262,10 @@ csw.setup = function(args)
         help = 'context switch',
         messages = {
             'PopMode',
-            { CallLuaSilently = 'custom.context_switch_to_helper' },
+            { CallLuaSilently = 'custom.context_switch.capture' },
             { SwitchModeCustom = 'context_switch' },
         },
     }
-
-    for i = 0, 9 do
-        local c = {}
-        table.insert(cs, c)
-        xplr.fn.custom['context_switch_to_' .. i] = function(app)
-            cur = i
-            if c.pwd then
-                local msgs = {
-                    { ChangeDirectory = c.pwd },
-                }
-                if c.filters then
-                    table.insert(msgs, 'ClearNodeFilters')
-                    for _, v in pairs(c.filters) do
-                        table.insert(msgs, { AddNodeFilter = { filter = v.filter, input = v.input } })
-                    end
-                end
-                if c.sorters then
-                    table.insert(msgs, 'ClearNodeSorters')
-                    for _, v in pairs(c.sorters) do
-                        table.insert(msgs, { AddNodeSorter = { sorter = v.sorter, reverse = v.reverse } })
-                    end
-                end
-                if c.focused_path then
-                    table.insert(msgs, { FocusPath = c.focused_path })
-                end
-                return msgs
-            else
-                capture(c, app)
-            end
-        end
-        xplr.config.modes.custom.context_switch.key_bindings.on_key[tostring(i)] = {
-            help = 'context switch ' .. i,
-            messages = {
-                { CallLuaSilently = 'custom.context_switch_to_' .. i },
-                'PopMode',
-            },
-        }
-    end
 end
 
 return csw
