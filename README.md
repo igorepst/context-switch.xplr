@@ -20,9 +20,9 @@ Upon quitting `xplr` the contexts will be cleared.
 | k/up            | previous context                                         |
 | tab/ctrl-n      | next initialized context                                 |
 | back-tab/ctrl-p | previous initialized context                             |
-| esc             | close context switch mode and return to the previous one |
+| esc/q           | close context switch mode and return to the previous one |
 | enter           | switch to the context under cursor                       |
-| q               | quit the context under cursor                            |
+| z               | clear the context under cursor                           |
 | ctrl-c          | terminate `xplr`                                         |
 
 ## Installation
@@ -59,6 +59,8 @@ The plugin supports passing multiple arguments to `setup` function
 - mode: `xplr` mode ('default' if absent)
 - key: keybinding to switch to context mode ('ctrl-s' if absent)
 - layout_height: the height in percents of the context switch window (a number between 1-99, default - 32)
+- layout: custom layout to show as a table (empty or `csw.builtin_layouts.default`; `csw.builtin_layouts.without_help`;
+any other that may include `csw.default_custom_content` in it - see the source code)
 
 ## Features
 

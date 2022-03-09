@@ -2,7 +2,7 @@ local csw = {}
 
 local cur = 1
 local initial_cur = cur
-local cs = {{}, {}, {}, {}, {}, {}, {}, {}, {}, {}}
+local cs = { {}, {}, {}, {}, {}, {}, {}, {}, {}, {} }
 
 ---@diagnostic disable
 local xplr = xplr
@@ -55,6 +55,68 @@ csw.get_current_context_num = function()
     return cur
 end
 
+local layout_height = 32
+
+csw.default_custom_content = {
+    CustomContent = {
+        title = 'Context Switch',
+        body = {
+            DynamicTable = {
+                widths = {
+                    { Percentage = 5 },
+                    { Percentage = 60 },
+                    { Percentage = 35 },
+                },
+                col_spacing = 1,
+                render = 'custom.context_switch.render',
+            },
+        },
+    },
+}
+
+csw.builtin_layouts = {
+    without_help = {
+        Vertical = {
+            config = {
+                constraints = {
+                    { Percentage = 100 - layout_height },
+                    { Percentage = layout_height },
+                },
+            },
+            splits = {
+                'Table',
+                csw.default_custom_content,
+            },
+        },
+    },
+    default = {
+        Vertical = {
+            config = {
+                constraints = {
+                    { Percentage = 100 - layout_height },
+                    { Percentage = layout_height },
+                },
+            },
+            splits = {
+                {
+                    Horizontal = {
+                        config = {
+                            constraints = {
+                                { Percentage = 70 },
+                                { Percentage = 30 },
+                            },
+                        },
+                        splits = {
+                            'Table',
+                            'HelpMenu',
+                        },
+                    },
+                },
+                csw.default_custom_content,
+            },
+        },
+    },
+}
 
 csw.setup = function(args)
     args = args or {}
@@ -63,6 +125,8 @@ csw.setup = function(args)
     if not args.layout_height or args.layout_height < 1 or args.layout_height > 99 then
         args.layout_height = 32
     end
+    layout_height = args.layout_height
+    args.layout = args.layout or csw.builtin_layouts.default
 
     xplr.fn.custom.context_switch.render = function(_)
         local t = { { '   #', 'Path', 'Sort & Filter' } }
@@ -113,7 +177,7 @@ csw.setup = function(args)
         cur = initial_cur
     end
 
-    xplr.fn.custom.context_switch.quit_cur = function(_)
+    xplr.fn.custom.context_switch.clear_cur = function(_)
         cs[cur + 1] = {}
     end
 
@@ -160,98 +224,71 @@ csw.setup = function(args)
                 up = {
                     help = 'prev',
                     messages = {
-                        { CallLuaSilently = "custom.context_switch.prev" }
+                        { CallLuaSilently = 'custom.context_switch.prev' },
                     },
                 },
                 down = {
                     help = 'next',
                     messages = {
-                        { CallLuaSilently = "custom.context_switch.next" }
+                        { CallLuaSilently = 'custom.context_switch.next' },
                     },
                 },
                 tab = {
                     help = 'next initialized',
                     messages = {
-                        { CallLuaSilently = "custom.context_switch.next_initialized" }
+                        { CallLuaSilently = 'custom.context_switch.next_initialized' },
                     },
                 },
-                ["back-tab"] = {
+                ['back-tab'] = {
                     help = 'prev initialized',
                     messages = {
-                        { CallLuaSilently = "custom.context_switch.prev_initialized" }
+                        { CallLuaSilently = 'custom.context_switch.prev_initialized' },
                     },
                 },
                 enter = {
                     help = 'switch',
                     messages = {
-                        { CallLuaSilently = "custom.context_switch.to_cur" },
-                        "PopMode",
+                        { CallLuaSilently = 'custom.context_switch.to_cur' },
+                        'PopMode',
                     },
                 },
                 esc = {
                     help = 'cancel',
                     messages = {
-                      { CallLuaSilently = "custom.context_switch.reset_cur" },
-                      'PopMode'
+                        { CallLuaSilently = 'custom.context_switch.reset_cur' },
+                        'PopMode',
                     },
                 },
                 ['ctrl-c'] = {
                     help = 'terminate',
                     messages = { 'Terminate' },
                 },
-                ['q'] = {
-                    help = 'quit context',
+                ['z'] = {
+                    help = 'clear context',
                     messages = {
-                      { CallLuaSilently = "custom.context_switch.quit_cur" },
+                        { CallLuaSilently = 'custom.context_switch.clear_cur' },
                     },
                 },
             },
             on_number = {
                 help = 'switch to',
                 messages = {
-                    "BufferInputFromKey",
-                    { CallLuaSilently = "custom.context_switch.to_input" },
-                    "PopMode",
+                    'BufferInputFromKey',
+                    { CallLuaSilently = 'custom.context_switch.to_input' },
+                    'PopMode',
                 },
             },
             default = {},
         },
-        layout = {
-            Vertical = {
-                config = {
-                    constraints = {
-                        { Percentage = 100 - args.layout_height },
-                        { Percentage = args.layout_height },
-                    },
-                },
-                splits = {
-                    'Table',
-                    {
-                        CustomContent = {
-                            title = 'Context Switch',
-                            body = {
-                                DynamicTable = {
-                                    widths = {
-                                        { Percentage = 5 },
-                                        { Percentage = 60 },
-                                        { Percentage = 35 },
-                                    },
-                                    col_spacing = 1,
-                                    render = 'custom.context_switch.render',
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
+        layout = args.layout,
     }
 
     local on_key = xplr.config.modes.custom.context_switch.key_bindings.on_key
     on_key.j = on_key.down
     on_key.k = on_key.up
-    on_key["ctrl-n"] = on_key.tab
-    on_key["ctrl-p"] = on_key["back-tab"]
+    on_key.q = on_key.esc
+    on_key['ctrl-n'] = on_key.tab
+    on_key['ctrl-p'] = on_key['back-tab']
 
     xplr.fn.custom.context_switch.capture = function(app)
         local c = cs[cur + 1]
