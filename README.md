@@ -71,18 +71,18 @@ any other that may include `csw.default_custom_content` in it - see the source c
   ```lua
     local csw = require('context-switch')
     csw.setup()
-    xplr.fn.custom.render_context_num = function(_)
-        return '  ' .. tostring(csw.get_current_context_num())
+    xplr.fn.custom.render_context_num = function(ctx)
+      return {
+        CustomParagraph = {
+          ui = {
+            title = { format = 'Ctx' } 
+          },
+          body = '  ' .. tostring(csw.get_current_context_num())
+        }
+      }
     end
     -- and then somewhere in your layout use
     {
-        CustomContent = {
-            title = 'Ctx',
-            body = {
-                DynamicParagraph = {
-                    render = 'custom.render_context_num',
-                },
-            },
-        }
+      Dynamic = 'custom.render_context_num'
     }
   ```
