@@ -86,3 +86,38 @@ any other that may include `csw.default_custom_content` in it - see the source c
       Dynamic = 'custom.render_context_num'
     }
   ```
+- Get raw context info (use `get_contexts`)<br/>
+  Example:
+
+  ```lua
+    local csw = require('context-switch')
+    csw.setup()
+    -- Shows a box of the numbers of active contexts in numerical order
+    xplr.fn.custom.render_active_context_nums = function(ctx)
+      local res = ''
+      local contexts = csw.get_contexts()
+      for i = 1, 10 do
+        local index = i + 1
+        -- Context 0 will be shown as '10'
+        if i == 10 then
+          index = 1
+        end
+        -- If context is not empty, append its number to result with a space
+        if next(contexts[index]) ~= nil then
+          res = res .. tostring(i) .. ' '
+        end
+      end
+      return {
+        CustomParagraph = {
+          ui = {
+            title = { format = 'Contexts' }
+          },
+          body = res
+        }
+      }
+    end
+    -- and then somewhere in your layout use
+    {
+      Dynamic = 'custom.render_active_context_nums'
+    }
+  ```
