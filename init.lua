@@ -55,6 +55,10 @@ csw.get_current_context_num = function()
     return cur
 end
 
+csw.get_contexts = function()
+    return cs
+end
+
 local layout_height = 32
 
 csw.default_custom_content = {
